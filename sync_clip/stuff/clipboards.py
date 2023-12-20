@@ -222,7 +222,7 @@ class WindowsClipboard(Clipboard):
     def get_data_from_clip(self):
         # noinspection PyBroadException
         try:
-            with self._clip:
+            with self:
                 data = self._clip.GetClipboardData()
                 return data
         except TypeError:
