@@ -1,14 +1,18 @@
+import logging
 import sys
 import time
 import shutil
 import ctypes
 import warnings
+import logging
 import subprocess
 from abc import ABC, abstractmethod
 from io import BytesIO
 from typing import Union
 
 from pip._internal.cli.main import main
+
+logger = logging.getLogger("sync_clip")
 
 
 def do_requires_install(require_name):
@@ -216,22 +220,17 @@ class WindowsClipboard(Clipboard):
                 pass
 
     def get_data_from_clip(self):
-
+        # noinspection PyBroadException
         try:
-            win32clipboard.OpenClipboard()
-            data = win32clipboard.GetClipboardData()
-            return data
+            with self._clip:
+                data = self._clip.GetClipboardData()
+                return data
         except TypeError:
             buffer = BytesIO()
             im: DibImageFile = ImageGrab.grabclipboard()
             im.save(buffer, 'PNG')
             data = buffer.getvalue()
             return data
-        finally:
-            try:
-                win32clipboard.CloseClipboard()
-            except Exception:
-                pass
 
     def __enter__(self):
         return self.open()

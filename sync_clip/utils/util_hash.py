@@ -8,16 +8,14 @@ def hash_data(data):
 
 
 if __name__ == "__main__":
-    print(hash_data("""
-    slkdjflskdjlf
-        lskdjflskjdlf 
-        sldkjflsdkjfl
-        
-        了开始简单立法空间是老师打开基辅罗斯大家
-        
-        
-        率领打开基辅罗斯的激发l
-        
-        老师的基辅罗斯的空间
-    
-    """))
+    data = """                    if h_data != self._last_hash_clip_data:
+                        self.this_clip.set_to_clip(clip_data.data)
+                        self._last_hash_clip_data = h_data
+                        sync_sample = clip_data.data[:1000]"""
+    print(hash_data(data))
+    data = b"""                    if h_data != self._last_hash_clip_data:
+                        self.this_clip.set_to_clip(clip_data.data)
+                        self._last_hash_clip_data = h_data
+                        sync_sample = clip_data.data[:1000]"""
+    print(hash_data(data))
+

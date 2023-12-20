@@ -32,7 +32,7 @@ def set_scripts_logging(_file_, logger=None, level=logging.DEBUG,
     if console_log:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(
-            logging.Formatter("%(filename)s [line:%(lineno)d] %(levelname)s "
+            logging.Formatter("%(asctime)s %(filename)s [line:%(lineno)d] %(levelname)s "
                               "%(message)s"))
         logger.addHandler(console_handler)
 

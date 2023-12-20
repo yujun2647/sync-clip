@@ -15,7 +15,7 @@ logger = logging.getLogger("sync_clip")
 
 class ClipboardMonitor(object):
     def __init__(self, host="0.0.0.0", port=12364):
-        self.this_clip = Clipboard.get_clipboard()
+        self.tclip = Clipboard.get_clipboard()
         self.rclip = Client(host=host, port=port)
         self.rclip.start()
         self.is_closed = True
@@ -30,10 +30,15 @@ class ClipboardMonitor(object):
                 clip_data: SyncData = self.rclip.recv_sync_sig.get(timeout=5)
                 if not clip_data.data.strip():
                     continue
+                # union format, windows clipboard will add '\r' before '\n'
+                if not isinstance(clip_data.data, bytes):
+                    clip_data.data = clip_data.data.encode()
+                clip_data.data = clip_data.data.replace(b"\r", b"")
+
                 h_data = hash_data(clip_data.data)
                 with self._compare_lock:
                     if h_data != self._last_hash_clip_data:
-                        self.this_clip.set_data_to_clip(clip_data.data)
+                        self.tclip.set_data_to_clip(clip_data.data)
                         self._last_hash_clip_data = h_data
                         sync_sample = clip_data.data[:1000]
                         if isinstance(sync_sample, bytes):
@@ -41,7 +46,6 @@ class ClipboardMonitor(object):
                         logger.info(f"""
 -------------------------------[sync from remote]-------------------------------
 {sync_sample}
-
 -------------------------------[sync from remote]-------------------------------
 
                         """)
@@ -56,12 +60,13 @@ class ClipboardMonitor(object):
         while not self.is_closed:
             # noinspection PyBroadException
             try:
-                clip_data: [str, bytes] = self.this_clip.get_data_from_clip()
-                if not clip_data.strip():
-                    time.sleep(0.3)
-                    continue
-                h_data = hash_data(clip_data)
+                time.sleep(0.3)
                 with self._compare_lock:
+                    clip_data: [str, bytes] = self.tclip.get_data_from_clip()
+                    if not clip_data.strip():
+                        continue
+
+                    h_data = hash_data(clip_data)
                     if h_data != self._last_hash_clip_data:
                         self.rclip.send_sync_data(SyncData(clip_data))
                         self._last_hash_clip_data = h_data
@@ -71,11 +76,9 @@ class ClipboardMonitor(object):
                         logger.info(f"""
 --------------------------------[sync to remote]--------------------------------
 {sync_sample}
-
 --------------------------------[sync to remote]--------------------------------
 
-                        """)
-                time.sleep(0.3)
+                                    """)
             except Exception as exp:
                 logger.error(f"[monitor_this_clip] error: {exp}, \n"
                              f"{traceback.format_exc()}")

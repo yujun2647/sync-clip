@@ -87,7 +87,6 @@ class Server(object):
                 elif isinstance(sig, HeartbeatSignal):
                     self._update_client(addr)
                 elif isinstance(sig, SyncData):
-                    print(f"sync data: {sig.data[:100]}")
                     self._broadcast_sync_data(sig, addr)
 
             except socket.timeout:
