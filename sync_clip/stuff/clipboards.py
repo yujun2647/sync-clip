@@ -226,13 +226,15 @@ class WindowsClipboard(Clipboard):
                 data = self._clip.GetClipboardData()
                 return data
         except TypeError:
-            buffer = BytesIO()
-            im: DibImageFile = ImageGrab.grabclipboard()
-            if im is not None:
+            # noinspection PyBroadException
+            try:
+                buffer = BytesIO()
+                im: DibImageFile = ImageGrab.grabclipboard()
                 im.save(buffer, 'PNG')
                 data = buffer.getvalue()
                 return data
-            return ""
+            except Exception:
+                return ""
 
     def __enter__(self):
         return self.open()
