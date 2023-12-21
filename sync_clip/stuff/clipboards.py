@@ -228,9 +228,11 @@ class WindowsClipboard(Clipboard):
         except TypeError:
             buffer = BytesIO()
             im: DibImageFile = ImageGrab.grabclipboard()
-            im.save(buffer, 'PNG')
-            data = buffer.getvalue()
-            return data
+            if im is not None:
+                im.save(buffer, 'PNG')
+                data = buffer.getvalue()
+                return data
+            return ""
 
     def __enter__(self):
         return self.open()
