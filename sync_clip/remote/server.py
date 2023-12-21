@@ -1,16 +1,11 @@
-"""
-接收远程的注册信息, 并记录
-
-接收远程的信号同步信息, 并广播给其他人
-
-
-"""
+import sys
+import time
 import pickle
 import socket
 import logging
-import time
 import traceback
 from queue import Queue
+from socket import SOL_SOCKET, SO_REUSEADDR
 
 from sync_clip.stuff.sync_signal import *
 from sync_clip.utils.util_thread import new_thread
@@ -37,12 +32,16 @@ class Server(object):
     def __init__(self, host="0.0.0.0", port=12364):
         self.host = host
         self.port = port
-        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_socket.bind((self.host, self.port))
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # prevent system keep address
+        self.tcp_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.tcp_socket.bind((self.host, self.port))
+        self.tcp_socket.listen(10)
         self.client_heartbeat_q = Queue()
         self.sending_msg_queue = Queue()
         self.is_closed = True
         self.client_set = {}
+        self.conns = []
 
     def _update_client(self, addr: tuple):
         self.client_set[addr] = time.time()
@@ -59,52 +58,96 @@ class Server(object):
             time.sleep(3)
 
     def _broadcast_sync_data(self, sig: SyncData, this_addr: tuple):
-        for addr in self.client_set.keys():
+        print(f"receiving data from {this_addr}: {sig.data[:100]}")
+        for conn, addr in self.conns:
             if addr != this_addr:
-                self._send_sync_data(sig, addr)
+                self._send_sync_data(conn, addr, sig)
 
-    def _send_sync_data(self, sig: SyncSignal, addr: tuple):
-        p_sync_data = pickle.dumps(sig)
+    def _send_sync_data(self, conn: socket.socket, addr, sig: SyncSignal):
+        p_sig_data = pickle.dumps(sig)
         try:
-            self.udp_socket.sendto(p_sync_data, addr)
+            data_length = len(p_sig_data)
+            header = f"{data_length}".zfill(10)
+            p_sig_data = header.encode() + p_sig_data
+            conn.send(p_sig_data)
+        except BrokenPipeError:
+            self.conns.remove((conn, addr))
+            conn.close()
         except Exception as exp:
             logger.error(f"sending sync data error: {exp} "
                          f"\n{traceback.format_exc()}")
 
+    @classmethod
+    def _receive_data(cls, conn: socket.socket):
+        conn.settimeout(0.5)
+        header = conn.recv(10)
+        if not header:
+            raise ConnectionResetError()
+        data_size = int(header.decode())
+        response = conn.recv(data_size)
+        if not response:
+            raise ConnectionResetError()
+        while data_size - len(response) > 0:
+            response += conn.recv(data_size - len(response))
+        return response
+
     @new_thread
-    def _keep_receiving(self):
+    def _keep_receiving(self, conn: socket.socket, addr: tuple):
         while not self.is_closed:
-            # noinspection PyBroadException
             try:
-                self.udp_socket.settimeout(0.5)
-                response, addr = self.udp_socket.recvfrom(1024 * 1024 * 5)
+                response = self._receive_data(conn)
                 sig: SyncSignal = pickle.loads(response)
                 assert isinstance(sig, SyncSignal)
-
-                if isinstance(sig, ConCheck):
-                    self._send_sync_data(sig, addr)
-                    self._update_client(addr)
-                elif isinstance(sig, HeartbeatSignal):
-                    self._update_client(addr)
-                elif isinstance(sig, SyncData):
+                if isinstance(sig, SyncData):
                     self._broadcast_sync_data(sig, addr)
-
             except socket.timeout:
                 continue
+            except ConnectionResetError:
+                self.conns.remove((conn, addr))
+                logger.info(f"client exit: {addr}")
+                break
             except Exception as exp:
-                logger.error(f"Exception while receiving: {exp}\n"
+                logger.error(f"exception: {exp}, \n"
                              f"{traceback.format_exc()}")
-                continue
+                # print(f"debug: {exp}, {response}")
+                sys.exit(1)
+
+    def _keep_accept_conn(self):
+        try:
+            while not self.is_closed:
+                # noinspection PyBroadException
+                try:
+                    self.tcp_socket.settimeout(0.5)
+                    conn, addr = self.tcp_socket.accept()
+                    self.conns.append((conn, addr))
+                    self._keep_receiving(conn, addr)
+                    print(f"new connection from {addr}")
+                except socket.timeout:
+                    continue
+                except Exception as exp:
+                    logger.error(f"Exception while receiving: {exp}\n"
+                                 f"{traceback.format_exc()}")
+                    continue
+        except KeyboardInterrupt:
+            self.close()
+            return
 
     def start(self):
         self.is_closed = False
-        self._keep_receiving()
-        self._monitor_expired_clients()
-        logger.info(f"\n\n\t[Server started] listening on "
+        logger.info(f"\n\n\t[Server starting] listening on "
                     f"`{self.host}:{self.port}`")
+        self._keep_accept_conn()
 
     def close(self):
+        self.tcp_socket.close()
+        if hasattr(self, "conns"):
+            for conn, addr in self.conns:
+                conn.close()
+            self.conns.clear()
         self.is_closed = True
+
+    def __del__(self):
+        self.close()
 
 
 def server(port=12364):

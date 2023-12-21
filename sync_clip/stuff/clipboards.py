@@ -1,8 +1,7 @@
-import logging
+import ctypes
 import sys
 import time
 import shutil
-import ctypes
 import warnings
 import logging
 import subprocess
@@ -80,6 +79,9 @@ class XclipClipboard(object):
                     "To remove this warning, omit the encoding parameter or specify it as None",
                     stacklevel=2,
                 )
+            if data.startswith(b"\x89PNG"):
+                args.append("-target")
+                args.append("image/png")
             proc = subprocess.Popen(
                 args,
                 stdin=subprocess.PIPE,
@@ -194,7 +196,7 @@ class WindowsClipboard(Clipboard):
               f"length: {len(data)},\n"
               f"type: {type(data)}")
         try:
-            if isinstance(data, bytes) and data.startswith(b"x89PNG"):
+            if isinstance(data, bytes) and data.startswith(b"\x89PNG"):
                 # image
                 input_data = BytesIO(data)
                 image = Image.open(input_data)
@@ -207,17 +209,15 @@ class WindowsClipboard(Clipboard):
                     self._clip.SetClipboardData(win32clipboard.CF_DIB, data)
             else:
                 with self:
+                    self._clip.EmptyClipboard()
                     if isinstance(data, str):
                         self._clip.SetClipboardText(data, 13)
                     elif isinstance(data, bytes):
-                        data = ctypes.create_string_buffer(data)
-                        self._clip.SetClipboardData(11, data)
+                        data = data.decode("utf-8")
+                        self._clip.SetClipboardText(data, 13)
 
         finally:
-            try:
-                win32clipboard.CloseClipboard()
-            except Exception:
-                pass
+            pass
 
     def get_data_from_clip(self):
         # noinspection PyBroadException
@@ -287,3 +287,5 @@ class LinuxClipboard(Clipboard):
 
     def set_data_to_clip(self, byte_data):
         self._clip.copy(byte_data)
+        with open("./test.png", "wb") as fp:
+            fp.write(byte_data)
