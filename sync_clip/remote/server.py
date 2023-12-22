@@ -58,7 +58,7 @@ class Server(object):
             time.sleep(3)
 
     def _broadcast_sync_data(self, sig: SyncData, this_addr: tuple):
-        print(f"receiving data from {this_addr}: {sig.data[:100]}")
+        logger.info(f"receiving data from {this_addr}: {sig.data[:20]}")
         for conn, addr in self.conns:
             if addr != this_addr:
                 self._send_sync_data(conn, addr, sig)
@@ -100,17 +100,21 @@ class Server(object):
                 assert isinstance(sig, SyncSignal)
                 if isinstance(sig, SyncData):
                     self._broadcast_sync_data(sig, addr)
+                elif isinstance(sig, HeartbeatSignal):
+                    pass
             except socket.timeout:
                 continue
             except ConnectionResetError:
                 self.conns.remove((conn, addr))
+                conn.close()
                 logger.info(f"client exit: {addr}")
                 break
             except Exception as exp:
                 logger.error(f"exception: {exp}, \n"
                              f"{traceback.format_exc()}")
                 # print(f"debug: {exp}, {response}")
-                sys.exit(1)
+                break
+        logger.info(f"client: {addr} listening thread end")
 
     def _keep_accept_conn(self):
         try:
@@ -121,7 +125,7 @@ class Server(object):
                     conn, addr = self.tcp_socket.accept()
                     self.conns.append((conn, addr))
                     self._keep_receiving(conn, addr)
-                    print(f"new connection from {addr}")
+                    logger.info(f"new connection from {addr}")
                 except socket.timeout:
                     continue
                 except Exception as exp:
@@ -150,7 +154,7 @@ class Server(object):
         self.close()
 
 
-def server(port=12364):
+def server(port=12365):
     from sync_clip.utils.util_log import set_scripts_logging
 
     set_scripts_logging(__file__, logger=logger, level=logging.DEBUG,

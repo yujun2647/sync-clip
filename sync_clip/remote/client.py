@@ -1,7 +1,3 @@
-"""
- accept remote sync signal
- send signal to remote
-"""
 import sys
 import logging
 import pickle
@@ -67,9 +63,9 @@ class Client(object):
                 data_length = len(p_sig_data)
                 header = f"{data_length}".zfill(10)
                 p_sig_data = header.encode() + p_sig_data
-                print(f"[client] send length : {data_length}")
+                # print(f"[client] send length : {data_length}")
                 t = self.tcp_socket.send(p_sig_data)
-                print(f"\t\t[client]: sent: {t}")
+                # print(f"\t\t[client]: sent: {t}")
 
             except Exception as exp:
                 logger.error(f"sending sync data error: {exp} "
@@ -116,12 +112,17 @@ class Client(object):
             except socket.timeout:
                 continue
             except ConnectionResetError:
+                logger.info(f"======== server offline, try to reconnect..."
+                            f"==========")
                 self.is_connected = False
                 while True:
                     self.tcp_socket.close()
                     self.tcp_socket = socket.socket(socket.AF_INET,
                                                     socket.SOCK_STREAM)
                     if self._check_connection():
+                        logger.info(
+                            f"======== server reconnect success !!!"
+                            f"==========")
                         break
                     time.sleep(1)
             except Exception as exp:
@@ -133,12 +134,12 @@ class Client(object):
     def _keep_alive(self):
         while not self.is_closed:
             self.send_sync_data(HeartbeatSignal())
-            time.sleep(1)
+            time.sleep(3)
 
     def start(self):
         self.is_closed = False
         self._keep_receiving()
-        # self._keep_alive()
+        self._keep_alive()
 
     def close(self):
         self.is_closed = True
