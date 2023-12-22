@@ -1,4 +1,4 @@
-# littlechat
+# sync-clip
 
 ## About
 
