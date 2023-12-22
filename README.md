@@ -7,7 +7,7 @@ and `screenshots (PNG)`, support os system: `Windows`, `Linux`
 
 ## Example
 
-![example](https://github.com/yujun2647/sync-clip/blob/main/imgs/example.png)
+![example](https://github.com/yujun2647/sync-clip/raw/main/imgs/example.png)
 
 ## Quick Start
 
