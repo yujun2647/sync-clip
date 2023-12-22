@@ -55,8 +55,9 @@ INSTALL_REQUIRES = _get_requires("requirements.txt")
 setup(
     name="sync-clip",
     version=__version__,
-    description="A cross platform clipboard synchronization tool, "
-                "support windows, linux, MacOS",
+    description="A crow platform clipboard synchronous tool, supports "
+                "synchronized `text`and screenshots (PNG), support os system: "
+                "Windows, Linux",
     python_requires=">=3.6",
     install_requires=INSTALL_REQUIRES,
     url="https://github.com/yujun2647/sync-clip",
