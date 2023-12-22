@@ -13,7 +13,6 @@ and `screenshots (PNG)`, support os system: `Windows`, `Linux`
 
 ### Install
 
-
 #### From Pypi
 
 ```shell
@@ -44,10 +43,15 @@ pip install git+https://gitee.com/walkerjun/sync-clip.git
 sclip -t server -sp 5000
 ```
 
-#### Connect with client
+#### Start client
 
-* connect server above
+assume server ip was `192.168.2.34`
+
+* start a client
+
+use following command in different machines then these machines shall share the
+clipboard with each other
 
 ```shell
-sclip -sp 5000
+sclip -sh 192.168.2.34 -sp 5000
 ```
