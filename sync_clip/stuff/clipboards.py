@@ -165,11 +165,11 @@ class XclipClipboard(object):
 class Clipboard(ABC):
 
     @abstractmethod
-    def get_data_from_clip(self):
+    def read_clip(self):
         pass
 
     @abstractmethod
-    def set_data_to_clip(self, byte_data):
+    def write_clip(self, byte_data):
         pass
 
     @classmethod
@@ -189,7 +189,7 @@ class WindowsClipboard(Clipboard):
         self._is_open = False
         self._clip = win32clipboard
 
-    def set_data_to_clip(self, data):
+    def write_clip(self, data):
         if not data.strip():
             return
         print(f"byte_data: {data[:10]}, \n"
@@ -219,7 +219,7 @@ class WindowsClipboard(Clipboard):
         finally:
             pass
 
-    def get_data_from_clip(self):
+    def read_clip(self):
         # noinspection PyBroadException
         try:
             with self:
@@ -281,7 +281,7 @@ class LinuxClipboard(Clipboard):
         self._clip = XclipClipboard()
         super().__init__()
 
-    def get_data_from_clip(self):
+    def read_clip(self):
         # noinspection PyBroadException
         try:
             text = self._clip.paste()
@@ -289,7 +289,5 @@ class LinuxClipboard(Clipboard):
             return ""
         return text
 
-    def set_data_to_clip(self, byte_data):
+    def write_clip(self, byte_data):
         self._clip.copy(byte_data)
-        with open("./test.png", "wb") as fp:
-            fp.write(byte_data)

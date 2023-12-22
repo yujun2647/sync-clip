@@ -30,8 +30,7 @@ class ClipboardMonitor(object):
             try:
                 time.sleep(0.3)
                 with self._compare_lock:
-                    clip_data: [str,
-                                bytes] = self.tclip.get_data_from_clip()
+                    clip_data: [str, bytes] = self.tclip.read_clip()
                     if not clip_data.strip():
                         continue
 
@@ -42,7 +41,7 @@ class ClipboardMonitor(object):
                             # same image different bytes datas
                             continue
                         self.rclip.send_sync_data(SyncData(clip_data))
-                        sync_sample = clip_data[:1000]
+                        sync_sample = clip_data[:500]
                         if isinstance(sync_sample, bytes):
                             try:
                                 sync_sample = sync_sample.decode("utf-8")
@@ -82,10 +81,10 @@ class ClipboardMonitor(object):
                 h_data = hash_data(compare_data)
                 with self._compare_lock:
                     if h_data != self._last_hash_clip_data:
-                        self.tclip.set_data_to_clip(clip_data.data)
+                        self.tclip.write_clip(clip_data.data)
                         self._last_hash_clip_data = h_data
                         self._last_get_remote_time = time.time()
-                        sync_sample = clip_data.data[:1000]
+                        sync_sample = clip_data.data[:500]
                         if isinstance(sync_sample, bytes):
                             try:
                                 sync_sample = sync_sample.decode("utf-8")
