@@ -13,13 +13,14 @@ and `screenshots (PNG)`, support os system: `Windows`, `Linux`
 
 ### Install
 
-#### From repository
 
 #### From Pypi
 
 ```shell
 pip install sync-clip
 ```
+
+#### From repository
 
 * From github
 
