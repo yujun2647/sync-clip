@@ -7,6 +7,7 @@ from threading import Lock
 from sync_clip.remote.client import Client
 from sync_clip.utils.util_thread import new_thread
 from sync_clip.utils.util_hash import hash_data
+from sync_clip.utils.utiil_image import reduce_image_size
 from sync_clip.stuff.sync_signal import *
 from sync_clip.stuff.clipboards import Clipboard
 
@@ -23,6 +24,10 @@ class ClipboardMonitor(object):
         self._last_hash_clip_data = b""
         self._last_get_remote_time = time.time()
 
+    @classmethod
+    def data_is_png_image(cls, data):
+        return isinstance(data, bytes) and data.startswith(b"\x89PNG")
+
     @new_thread
     def _monitor_this_clip(self):
         while not self.is_closed:
@@ -33,6 +38,15 @@ class ClipboardMonitor(object):
                     clip_data: [str, bytes] = self.tclip.read_clip()
                     if not clip_data.strip():
                         continue
+
+                    if self.data_is_png_image(clip_data):
+                        # prevent large image
+                        a = time.time()
+                        clip_data, reduced = reduce_image_size(clip_data)
+                        if reduced:
+                            print(
+                                f"Reduced image cost: {round(time.time() - a, 2)}")
+                            self.tclip.write_clip(clip_data)
 
                     h_data = hash_data(clip_data)
                     if h_data != self._last_hash_clip_data:

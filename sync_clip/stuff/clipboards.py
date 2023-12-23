@@ -11,6 +11,8 @@ from typing import Union
 
 from pip._internal.cli.main import main
 
+from sync_clip.utils.utiil_image import reduce_image_size
+
 logger = logging.getLogger("sync_clip")
 
 
@@ -290,4 +292,5 @@ class LinuxClipboard(Clipboard):
         return text
 
     def write_clip(self, byte_data):
+        byte_data, _ = reduce_image_size(byte_data)
         self._clip.copy(byte_data)

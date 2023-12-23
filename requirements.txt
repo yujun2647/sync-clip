@@ -1,4 +1,4 @@
 --index-url http://mirrors.aliyun.com/pypi/simple/
 --trusted-host mirrors.aliyun.com
+pillow
 pywin32; platform_system=="Windows"
-pillow; platform_system=="Windows"
