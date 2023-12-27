@@ -99,7 +99,7 @@ class XclipClipboard(object):
         else:
             raise TypeError(
                 f"data argument must be of type str or bytes, not {type(data)}")
-        stdout, stderr = proc.communicate(data)
+        stdout, stderr = proc.communicate(data, timeout=3)
         if proc.returncode != 0:
             raise ClipboardException(
                 f"Copy failed. xclip returned code: {proc.returncode!r} "
@@ -127,12 +127,14 @@ class XclipClipboard(object):
                 stderr=subprocess.PIPE,
                 text=text,
                 encoding=encoding,
+                timeout=3
             )
         else:
             # retrieve the available targets and selects the first mime type available or plain text.
             available_targets = [
                 t for t in subprocess.check_output(args + ['-t', 'TARGETS'],
-                                                   text=True).splitlines() if
+                                                   text=True,
+                                                   timeout=3).splitlines() if
                 t.islower()
             ]
             if "text/plain" in available_targets:
@@ -144,7 +146,8 @@ class XclipClipboard(object):
 
             completed_proc = subprocess.run(
                 args + target, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                timeout=3
             )
 
         if completed_proc.returncode != 0:
