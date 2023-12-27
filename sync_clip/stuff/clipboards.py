@@ -238,7 +238,8 @@ class WindowsClipboard(Clipboard):
                 im.save(buffer, 'PNG')
                 data = buffer.getvalue()
                 return data
-            except Exception:
+            except Exception as exp:
+                logger.error(f"read clipboard failed, error: {exp}")
                 return ""
 
     def __enter__(self):
@@ -290,7 +291,9 @@ class LinuxClipboard(Clipboard):
         # noinspection PyBroadException
         try:
             text = self._clip.paste()
-        except Exception:
+        except Exception as exp:
+            logger.error(f"read clipboard failed, error: {exp}")
+
             return ""
         return text
 
