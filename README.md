@@ -2,7 +2,7 @@
 
 ## About
 
-A crow platform clipboard synchronous tool, supports synchronized `text`
+A cross platform clipboard synchronous tool, supports synchronized `text`
 and `screenshots (PNG)`, support os system: `Windows`, `Linux`
 
 ## Example
