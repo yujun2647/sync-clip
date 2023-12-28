@@ -47,9 +47,9 @@ sclip -t server -sp 5000
 
 assume server ip was `192.168.2.34`
 
-* start a client
+* start a client 
 
-use following command in different machines then these machines shall share the
+  use following command in different machines then these machines shall share the
 clipboard with each other
 
 ```shell
