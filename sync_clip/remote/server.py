@@ -89,6 +89,7 @@ class Server(object):
             raise ConnectionResetError()
         while data_size - len(response) > 0:
             response += conn.recv(data_size - len(response))
+        # print(f"head: {data_size}, true receive: {len(response)}")
         return response
 
     @new_thread
@@ -102,10 +103,6 @@ class Server(object):
                     self._broadcast_sync_data(sig, addr)
                 elif isinstance(sig, HeartbeatSignal):
                     pass
-            except pickle.PickleError as exp:
-                logger.error(f"data broken for unknown reason: {exp}, \n"
-                             f"{traceback.format_exc()}")
-                continue
             except socket.timeout:
                 continue
             except ConnectionResetError:

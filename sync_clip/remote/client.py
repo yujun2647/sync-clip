@@ -1,6 +1,7 @@
 import sys
 import logging
 import pickle
+import threading
 import time
 import socket
 import traceback
@@ -14,13 +15,14 @@ logger = logging.getLogger("sync_clip")
 
 
 class Client(object):
-    MAX_MESSAGE_SIZE = 50 * 1024
+    MAX_MESSAGE_SIZE = 25 * 1024
 
-    def __init__(self, host="0.0.0.0", port=12364):
+    def __init__(self, host="0.0.0.0", port=8902):
         self.host = host
         self.port = port
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.is_connected = False
+        self.send_lock = threading.Lock()
         if not self._check_connection():
             sys.exit(1)
         print("confirmed connection !!!")
@@ -56,20 +58,22 @@ class Client(object):
         return split_sig_datas
 
     def send_sync_data(self, signal: SyncSignal):
-        sig_datas = self.split_sig_data(signal)
-        for sig_data in sig_datas:
-            p_sig_data = pickle.dumps(sig_data)
-            try:
-                data_length = len(p_sig_data)
-                header = f"{data_length}".zfill(10)
-                p_sig_data = header.encode() + p_sig_data
-                # print(f"[client] send length : {data_length}")
-                t = self.tcp_socket.send(p_sig_data)
-                # print(f"\t\t[client]: sent: {t}")
+        with self.send_lock:
+            sig_datas = self.split_sig_data(signal)
+            for sig_data in sig_datas:
+                p_sig_data = pickle.dumps(sig_data)
+                try:
+                    data_length = len(p_sig_data)
+                    header = f"{data_length}".zfill(10)
+                    p_sig_data = header.encode() + p_sig_data
+                    # print(f"[client] send length : {data_length}, "
+                    #       f"expect full length: {len(p_sig_data)}")
+                    t = self.tcp_socket.send(p_sig_data)
+                    # print(f"\t\t[client]: sent: {t}")
 
-            except Exception as exp:
-                logger.error(f"sending sync data error: {exp} "
-                             f"\n{traceback.format_exc()}")
+                except Exception as exp:
+                    logger.error(f"sending sync data error: {exp} "
+                                 f"\n{traceback.format_exc()}")
 
     def _receive_data(self):
         self.tcp_socket.settimeout(0.5)
