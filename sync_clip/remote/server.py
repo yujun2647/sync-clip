@@ -102,6 +102,10 @@ class Server(object):
                     self._broadcast_sync_data(sig, addr)
                 elif isinstance(sig, HeartbeatSignal):
                     pass
+            except pickle.PickleError as exp:
+                logger.error(f"data broken for unknown reason: {exp}, \n"
+                             f"{traceback.format_exc()}")
+                continue
             except socket.timeout:
                 continue
             except ConnectionResetError:
@@ -154,7 +158,7 @@ class Server(object):
         self.close()
 
 
-def server(port=12365):
+def server(port=8902):
     from sync_clip.utils.util_log import set_scripts_logging
 
     set_scripts_logging(__file__, logger=logger, level=logging.DEBUG,
