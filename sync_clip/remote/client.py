@@ -79,7 +79,10 @@ class Client(object):
                     try:
                         t = self.tcp_socket.send(p_sig_data)
                     except Exception as e:
-                        self.reconnect()
+                        try:
+                            self.reconnect()
+                        except Exception as e:
+                            pass
                         raise
                     # print(f"\t\t[client]: sent: {t}")
 
