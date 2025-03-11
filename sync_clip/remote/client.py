@@ -29,14 +29,6 @@ class Client(object):
         self.is_closed = True
         self.recv_sync_sig = Queue()
 
-    def reconnect(self):
-        try:
-            self.tcp_socket.close()
-        except Exception:
-            pass
-        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.tcp_socket.connect((self.host, self.port))
-
     def _check_connection(self):
         try:
             self.tcp_socket.connect((self.host, self.port))
@@ -76,14 +68,7 @@ class Client(object):
                     p_sig_data = header.encode() + p_sig_data
                     # print(f"[client] send length : {data_length}, "
                     #       f"expect full length: {len(p_sig_data)}")
-                    try:
-                        t = self.tcp_socket.send(p_sig_data)
-                    except Exception as e:
-                        try:
-                            self.reconnect()
-                        except Exception as e:
-                            pass
-                        raise
+                    t = self.tcp_socket.send(p_sig_data)
                     # print(f"\t\t[client]: sent: {t}")
 
                 except Exception as exp:
@@ -131,18 +116,24 @@ class Client(object):
             except socket.timeout:
                 continue
             except ConnectionResetError:
-                logger.info(f"======== server offline, try to reconnect..."
-                            f"==========")
                 self.is_connected = False
                 while True:
+                    logger.info(f"======== server offline, try to reconnect..."
+                                f"==========")
                     self.tcp_socket.close()
-                    self.tcp_socket = socket.socket(socket.AF_INET,
-                                                    socket.SOCK_STREAM)
-                    if self._check_connection():
-                        logger.info(
-                            f"======== server reconnect success !!!"
-                            f"==========")
-                        break
+                    try:
+                        self.tcp_socket = socket.socket(socket.AF_INET,
+                                                        socket.SOCK_STREAM)
+                        if self._check_connection():
+                            logger.info(
+                                f"======== server reconnect success !!!"
+                                f"==========")
+                            break
+                    except Exception as e:
+                        try:
+                            self.tcp_socket.close()
+                        except Exception:
+                            pass
                     time.sleep(1)
             except Exception as exp:
                 logger.error(f"Exception while receiving: {exp}\n"
