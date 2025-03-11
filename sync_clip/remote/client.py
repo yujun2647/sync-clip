@@ -30,6 +30,11 @@ class Client(object):
         self.recv_sync_sig = Queue()
 
     def reconnect(self):
+        try:
+            self.tcp_socket.close()
+        except Exception:
+            pass
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_socket.connect((self.host, self.port))
 
     def _check_connection(self):
