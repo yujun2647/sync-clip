@@ -29,6 +29,9 @@ class Client(object):
         self.is_closed = True
         self.recv_sync_sig = Queue()
 
+    def reconnect(self):
+        self.tcp_socket.connect((self.host, self.port))
+
     def _check_connection(self):
         try:
             self.tcp_socket.connect((self.host, self.port))
@@ -68,7 +71,11 @@ class Client(object):
                     p_sig_data = header.encode() + p_sig_data
                     # print(f"[client] send length : {data_length}, "
                     #       f"expect full length: {len(p_sig_data)}")
-                    t = self.tcp_socket.send(p_sig_data)
+                    try:
+                        t = self.tcp_socket.send(p_sig_data)
+                    except Exception as e:
+                        self.reconnect()
+                        raise
                     # print(f"\t\t[client]: sent: {t}")
 
                 except Exception as exp:
